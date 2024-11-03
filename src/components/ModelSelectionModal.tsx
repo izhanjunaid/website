@@ -1,8 +1,14 @@
 import React from 'react';
 
-// List of models to display
+// Define prop types for ModelSelectionModal
+interface ModelSelectionModalProps {
+  closeModelSelection: () => void; // Function to close the modal
+  selectModel: (imgSrc: string) => void; // Function to handle model selection
+}
+
+// Use the provided model data with the `/test.png` image
 const models = [
-  { id: 1, imgSrc: "/test.png", name: 'Model 1' },
+  { id: 1, imgSrc: '/test.png', name: 'Model 1' },
   { id: 2, imgSrc: '/test.png', name: 'Model 2' },
   { id: 3, imgSrc: '/test.png', name: 'Model 3' },
   { id: 4, imgSrc: '/test.png', name: 'Model 4' },
@@ -10,11 +16,11 @@ const models = [
   { id: 6, imgSrc: '/test.png', name: 'Model 6' },
 ];
 
-const ModelSelectionModal = ({ closeModelSelection, selectModel }) => {
+const ModelSelectionModal: React.FC<ModelSelectionModalProps> = ({ closeModelSelection, selectModel }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 transition-opacity duration-300 ease-in-out">
       <div className="bg-white rounded-2xl shadow-2xl w-[500px] max-w-full p-8 transform transition-all duration-300 ease-in-out scale-95 hover:scale-100">
-        <h2 className="text-2xl font-bold mb-6 text-gray-700 text-center">Select  Model</h2>
+        <h2 className="text-2xl font-bold mb-6 text-gray-700 text-center">Select a Model</h2>
 
         {/* Display models for selection */}
         <div className="grid grid-cols-3 gap-4">
