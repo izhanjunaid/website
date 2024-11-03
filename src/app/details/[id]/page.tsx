@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import Data from "@/utils/productData";
 import { useParams } from "next/navigation";
 import Image from "next/image";
+import VirtualMakeupModal from "@/components/VirtualMakeupModal"; // Import the modal component
 
 import {
   AiFillStar,
@@ -12,7 +13,6 @@ import {
 } from "react-icons/ai";
 
 import { MdCompareArrows } from "react-icons/md";
-
 import { FaFacebookSquare, FaTwitter, FaInstagram } from "react-icons/fa";
 import Link from "next/link";
 import { useAppDispatch } from "@/redux/hooks";
@@ -37,6 +37,7 @@ const DetailPage = () => {
     category: [],
     sale: false,
   });
+  const [isModalOpen, setIsModalOpen] = useState(false); // State to manage modal open/close
   const params = useParams();
   const dispatch = useAppDispatch();
 
@@ -59,7 +60,6 @@ const DetailPage = () => {
           <Link href="/" className="cursor-pointer hover:text-accent">
             Home
           </Link>
-
           <div className="w-[30px] h-[2px] bg-gray-400" />
           <p className="capitalize">{productData?.category[0]}</p>
           <div className="w-[30px] h-[2px] bg-gray-400" />
@@ -109,13 +109,17 @@ const DetailPage = () => {
               <AiOutlineShoppingCart className="text-[24px]" />
               Add to cart
             </button>
+
+            {/* Try Virtual Makeup Button */}
             <button
               className="uppercase bg-accent py-4 px-8 rounded-lg text-white flex gap-2 items-center hover:bg-black"
-             // onClick={addProductToCart}
+              onClick={() => setIsModalOpen(true)} // Open modal on click
             >
-             
               Try Virtual Makeup
             </button>
+
+            {/* Render Modal when the button is clicked */}
+            {isModalOpen && <VirtualMakeupModal closeModal={() => setIsModalOpen(false)} />}
 
             <div className="flex gap-4 items-center uppercase py-4 text-[14px]">
               <div className="flex gap-1 items-center">
