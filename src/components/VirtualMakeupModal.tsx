@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import ModelSelectionModal from './ModelSelectionModal';
 
-// Define prop types for VirtualMakeupModal
+// Define the prop types for the VirtualMakeupModal component
 interface VirtualMakeupModalProps {
-  closeModal: () => void; // Function to close the modal
+  closeModal: () => void; // Define closeModal as a function that returns void
 }
 
 const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal }) => {
