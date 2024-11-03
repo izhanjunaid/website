@@ -14,7 +14,7 @@ const ModelSelectionModal = ({ closeModelSelection, selectModel }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 transition-opacity duration-300 ease-in-out">
       <div className="bg-white rounded-2xl shadow-2xl w-[500px] max-w-full p-8 transform transition-all duration-300 ease-in-out scale-95 hover:scale-100">
-        <h2 className="text-2xl font-bold mb-6 text-gray-700 text-center">Select a Model</h2>
+        <h2 className="text-2xl font-bold mb-6 text-gray-700 text-center">Select  Model</h2>
 
         {/* Display models for selection */}
         <div className="grid grid-cols-3 gap-4">
