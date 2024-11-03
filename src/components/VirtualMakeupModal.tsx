@@ -56,7 +56,7 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal }) =
                 onClick={() => setIsModelSelectionOpen(true)} // Open Model Selection Modal
                 className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-3 rounded-lg font-semibold hover:bg-gradient-to-l transition-colors duration-300"
               >
-                Use Model
+                Select Model
               </button>
             </div>
           </>
