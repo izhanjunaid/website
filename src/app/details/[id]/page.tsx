@@ -109,6 +109,13 @@ const DetailPage = () => {
               <AiOutlineShoppingCart className="text-[24px]" />
               Add to cart
             </button>
+            <button
+              className="uppercase bg-accent py-4 px-8 rounded-lg text-white flex gap-2 items-center hover:bg-black"
+             // onClick={addProductToCart}
+            >
+             
+              Try Virtual Makeup
+            </button>
 
             <div className="flex gap-4 items-center uppercase py-4 text-[14px]">
               <div className="flex gap-1 items-center">
