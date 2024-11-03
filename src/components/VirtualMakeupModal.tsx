@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
-import ModelSelectionModal from './ModelSelectionModal'; // Import the new Model Selection Modal
+import ModelSelectionModal from './ModelSelectionModal';
 
-const VirtualMakeupModal = ({ closeModal }) => {
+// Define prop types for VirtualMakeupModal
+interface VirtualMakeupModalProps {
+  closeModal: () => void; // Function to close the modal
+}
+
+const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal }) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isModelSelectionOpen, setIsModelSelectionOpen] = useState(false); // Manage second modal state
 
