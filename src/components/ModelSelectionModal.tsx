@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import React, { useState } from 'react';
-=======
-import React from 'react';
->>>>>>> d3020857ad632300855e74ab84ffd9ef8611f632
 
 // Define prop types for ModelSelectionModal
 interface ModelSelectionModalProps {
@@ -21,7 +17,6 @@ const models = [
 ];
 
 const ModelSelectionModal: React.FC<ModelSelectionModalProps> = ({ closeModelSelection, selectModel }) => {
-<<<<<<< HEAD
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [processing, setProcessing] = useState<boolean>(false);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
@@ -62,8 +57,6 @@ const ModelSelectionModal: React.FC<ModelSelectionModalProps> = ({ closeModelSel
     }
   };
 
-=======
->>>>>>> d3020857ad632300855e74ab84ffd9ef8611f632
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 transition-opacity duration-300 ease-in-out">
       <div className="bg-white rounded-2xl shadow-2xl w-[500px] max-w-full p-8 transform transition-all duration-300 ease-in-out scale-95 hover:scale-100">
@@ -87,7 +80,6 @@ const ModelSelectionModal: React.FC<ModelSelectionModalProps> = ({ closeModelSel
           ))}
         </div>
 
-<<<<<<< HEAD
         {/* File input for uploading image */}
         <div className="mt-6">
           <input
@@ -121,8 +113,6 @@ const ModelSelectionModal: React.FC<ModelSelectionModalProps> = ({ closeModelSel
           </div>
         )}
 
-=======
->>>>>>> d3020857ad632300855e74ab84ffd9ef8611f632
         <div className="mt-6 text-center">
           <button
             onClick={closeModelSelection}
