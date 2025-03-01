@@ -14,10 +14,7 @@
     "@types/react": "18.2.21",
     "@types/react-dom": "18.2.7",
     "autoprefixer": "10.4.15",
-<<<<<<< HEAD
     "axios": "^1.7.7",
-=======
->>>>>>> d3020857ad632300855e74ab84ffd9ef8611f632
     "eslint": "8.48.0",
     "eslint-config-next": "13.4.19",
     "next": "^13.5.7",
