@@ -1,33 +1,28 @@
 import React, { useState, ChangeEvent } from 'react';
 import ModelSelectionModal from './ModelSelectionModal';
 
-// Define a type for shade options
 interface ShadeOption {
   name: string;
-  src: string; // reference image source (e.g. from your public folder)
+  src: string; // reference image source (from your public folder)
 }
 
-// Define the prop types for the VirtualMakeupModal component
 interface VirtualMakeupModalProps {
   closeModal: () => void;
 }
 
 const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal }) => {
-  // State for the user's source (face) image
   const [sourceImage, setSourceImage] = useState<string | null>(null);
-  // State for the reference image (either from model selection or shade selection)
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
-  // Manage the second modal for selecting a model image
   const [isModelSelectionOpen, setIsModelSelectionOpen] = useState(false);
-  // Shade selection state
-  const shadeOptions: ShadeOption[] = [
-    { name: "Ruby Red", src: "/images/ruby_red.png" },
-    { name: "Coral", src: "/images/coral.png" },
-    { name: "Nude", src: "/images/nude.png" }
-  ];
-  const [selectedShade, setSelectedShade] = useState<ShadeOption | null>(null);
+  const [isShadeModalOpen, setIsShadeModalOpen] = useState(false);
 
-  // Handle source image upload from user
+  const shadeOptions: ShadeOption[] = [
+    { name: "Ruby Red", src: '/eye.jpg' },
+    { name: "Coral", src: '/eye.jpg' },
+    { name: "Nude", src: '/eye.jpg' },
+    { name: "Rose", src: '/eye.jpg' }
+  ];
+
   const handleSourceUpload = (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const fileUrl = URL.createObjectURL(event.target.files[0]);
@@ -35,50 +30,38 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal }) =
     }
   };
 
-  // Handle model selection via the existing modal
   const handleModelSelected = (imgSrc: string) => {
-    setReferenceImage(imgSrc);
+    setSourceImage(imgSrc);
     setIsModelSelectionOpen(false);
   };
 
-  // Handle shade selection from the dropdown
-  const handleShadeChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const shadeName = event.target.value;
-    const found = shadeOptions.find((option) => option.name === shadeName);
-    setSelectedShade(found || null);
-    if (found) {
-      setReferenceImage(found.src);
-    }
+  const fetchImageAsBlob = async (url: string) => {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new File([blob], "image.jpg", { type: blob.type });
   };
 
-  // Handle the makeup transfer action
-  // This function would typically package the source and reference images
-  // and send them to your cloud-based AI model API.
-  const handleTransfer = async () => {
-    if (!sourceImage || !referenceImage) {
-      alert("Please upload a source image and select a reference image (model or shade).");
+  const handleShadeSelected = async (shade: ShadeOption) => {
+    setReferenceImage(shade.src);
+    setIsShadeModalOpen(false);
+
+    if (!sourceImage) {
+      alert("Please upload or select a source image first.");
       return;
     }
 
-    // For demonstration purposes, we convert the image URLs to File objects using fetch
-    // In a real-world scenario, you might have the files already or use a different approach.
     try {
-      const fetchImageAsBlob = async (url: string) => {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        return new File([blob], "image.jpg", { type: blob.type });
-      };
-
       const sourceFile = await fetchImageAsBlob(sourceImage);
-      const referenceFile = await fetchImageAsBlob(referenceImage);
+      const referenceFile = await fetchImageAsBlob(shade.src);
 
-      // Create a FormData object to send both images to the cloud API
       const formData = new FormData();
       formData.append("source", sourceFile);
       formData.append("reference", referenceFile);
 
-      // Call your cloud-based API endpoint (update the URL accordingly)
-      const response = await fetch("https://your-api-endpoint.herokuapp.com/predict", {
+      // Replace with your DigitalOcean API URL
+      const apiUrl = "http://167.71.229.192:8080/predict";
+
+      const response = await fetch(apiUrl, {
         method: "POST",
         body: formData,
       });
@@ -88,10 +71,9 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal }) =
         return;
       }
 
-      // Convert the response into a Blob and create a local URL for display
       const resultBlob = await response.blob();
       const resultUrl = URL.createObjectURL(resultBlob);
-      setReferenceImage(resultUrl); // Reuse the referenceImage state to display the result
+      setReferenceImage(resultUrl);
     } catch (error) {
       console.error("Transfer failed", error);
       alert("Transfer failed: " + error);
@@ -99,91 +81,124 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal }) =
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 transition-opacity duration-300 ease-in-out">
-      <div className="bg-white rounded-2xl shadow-2xl w-[400px] max-w-full p-8 transform transition-all duration-300 ease-in-out scale-95 hover:scale-100">
-        <h2 className="text-2xl font-bold mb-6 text-gray-700 text-center">Try Virtual Makeup</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 relative">
+        {/* Modal Title */}
+        <h2 className="text-2xl font-bold mb-4 text-center">Virtual Makeup Studio</h2>
+        
+        {/* Close Button (top-right corner for convenience) */}
+        <button
+          onClick={closeModal}
+          className="absolute top-3 right-4 text-red-500 hover:text-red-700 font-semibold text-sm"
+        >
+          ✕
+        </button>
 
-        {/* Display the source image if uploaded */}
-        {sourceImage ? (
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-2 text-center">Your Face Image</h3>
-            <img src={sourceImage} alt="Your Face" className="w-full h-auto rounded-lg" />
-          </div>
-        ) : (
-          <label className="block w-full cursor-pointer mb-4">
-            <div className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3 rounded-lg font-semibold hover:bg-gradient-to-l transition-colors duration-300 text-center">
-              Upload Your Face Image
-            </div>
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleSourceUpload}
-            />
-          </label>
-        )}
-
-        {/* Display the reference image if available (from model selection or shade selection) */}
-        {referenceImage ? (
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-2 text-center">Reference Makeup Image</h3>
-            <img src={referenceImage} alt="Reference" className="w-full h-auto rounded-lg" />
-          </div>
-        ) : (
-          <div className="space-y-4 mb-4">
-            {/* Button to select a model image */}
+        {/* If no source image, show upload and model buttons */}
+        {!sourceImage ? (
+          <div className="flex flex-col space-y-4 items-center">
+            <label className="w-full">
+              <div className="bg-blue-600 text-white py-2 px-4 rounded font-bold text-center cursor-pointer hover:bg-blue-700 transition">
+                Upload Your Face Image
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleSourceUpload}
+              />
+            </label>
             <button
               onClick={() => setIsModelSelectionOpen(true)}
-              className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-3 rounded-lg font-semibold hover:bg-gradient-to-l transition-colors duration-300"
+              className="bg-green-500 text-white py-2 px-4 rounded font-bold hover:bg-green-600 transition"
             >
-              Select Model
+              Select Model (as Source)
             </button>
-            {/* Dropdown to select a shade */}
-            <div>
-              <label className="block text-center font-semibold mb-2">Or Select a Shade</label>
-              <select
-                onChange={handleShadeChange}
-                className="w-full border rounded-lg py-2 px-3"
-                defaultValue=""
-              >
-                <option value="" disabled>
-                  Select Shade
-                </option>
-                {shadeOptions.map((shade) => (
-                  <option key={shade.name} value={shade.name}>
-                    {shade.name}
-                  </option>
-                ))}
-              </select>
+          </div>
+        ) : (
+          // If user has a source image
+          <div>
+            {/* Container for side-by-side images */}
+            <div className="flex flex-col md:flex-row md:items-start md:justify-around gap-6 mb-6">
+              {/* Source Image */}
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold mb-2 text-center md:text-left">
+                  Your Face Image
+                </h3>
+                <img
+                  src={sourceImage}
+                  alt="Your Face"
+                  className="w-full max-h-80 object-cover rounded border"
+                />
+              </div>
+
+              {/* Result Image */}
+              {referenceImage && (
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold mb-2 text-center md:text-left">
+                    Result Image
+                  </h3>
+                  <img
+                    src={referenceImage}
+                    alt="Result Makeup"
+                    className="w-full max-h-80 object-cover rounded border"
+                  />
+                </div>
+              )}
             </div>
+
+            {/* Select Shade Button (only if we haven’t shown result yet) */}
+            {!referenceImage && (
+              <div className="text-center">
+                <button
+                  onClick={() => setIsShadeModalOpen(true)}
+                  className="bg-purple-500 text-white py-2 px-6 rounded font-bold hover:bg-purple-600 transition"
+                >
+                  Select Shade
+                </button>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Transfer Makeup Button */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={handleTransfer}
-            className="w-full bg-purple-500 text-white py-3 rounded-lg font-semibold hover:bg-purple-600 transition-colors duration-300"
-          >
-            Transfer Makeup
-          </button>
-        </div>
-
-        <div className="mt-4 text-center">
-          <button
-            onClick={closeModal}
-            className="text-red-500 font-semibold hover:text-red-700 transition-colors duration-300"
-          >
-            Close
-          </button>
-        </div>
-
-        {/* Render ModelSelectionModal if open */}
+        {/* Model Selection Modal */}
         {isModelSelectionOpen && (
           <ModelSelectionModal
             closeModelSelection={() => setIsModelSelectionOpen(false)}
             selectModel={handleModelSelected}
           />
+        )}
+
+        {/* Shade Selection Modal */}
+        {isShadeModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl p-6 w-80 relative">
+              <h3 className="text-xl font-bold mb-4 text-center">
+                Select a Shade
+              </h3>
+              <button
+                onClick={() => setIsShadeModalOpen(false)}
+                className="absolute top-2 right-3 text-gray-500 hover:text-gray-700 font-semibold text-sm"
+              >
+                ✕
+              </button>
+              <div className="grid grid-cols-2 gap-4">
+                {shadeOptions.map((shade) => (
+                  <div key={shade.name} className="flex flex-col items-center">
+                    <img
+                      src={shade.src}
+                      alt={shade.name}
+                      className="cursor-pointer w-24 h-24 object-cover rounded-full border hover:opacity-80 transition"
+                      onClick={() => handleShadeSelected(shade)}
+                    />
+                    <span className="mt-2 text-sm font-medium text-gray-700">
+                      {shade.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
