@@ -59,7 +59,7 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal }) =
       formData.append("reference", referenceFile);
 
       // Replace with your DigitalOcean API URL
-      const apiUrl = "http://167.71.229.192:8080/predict";
+      const apiUrl = "https://glamai.duckdns.org/predict";
 
       const response = await fetch(apiUrl, {
         method: "POST",
