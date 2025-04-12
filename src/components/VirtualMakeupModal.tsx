@@ -15,11 +15,10 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal }) =
   // State
   // -----------------------------
   const [sourceImage, setSourceImage] = useState<string | null>(null);
+  const [sourceFile, setSourceFile] = useState<File | null>(null); // NEW state to store the uploaded file object
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
-
   const [isModelSelectionOpen, setIsModelSelectionOpen] = useState(false);
   const [isShadeModalOpen, setIsShadeModalOpen] = useState(false);
-
   const [selectedShade, setSelectedShade] = useState<ShadeOption | null>(null);
   const [isTransferring, setIsTransferring] = useState(false);
 
@@ -42,6 +41,7 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal }) =
   const handleSourceUpload = (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
+      setSourceFile(file); // Store the actual File object for later use
       const fileUrl = URL.createObjectURL(file);
       setSourceImage(fileUrl);
       setReferenceImage(null);
@@ -57,7 +57,7 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal }) =
     setSelectedShade(null);
   };
 
-  // Fetch as Blob -> File
+  // Fetch as Blob -> File (kept for reference images or fallback)
   const fetchImageAsBlob = async (url: string) => {
     const response = await fetch(url);
     const blob = await response.blob();
@@ -80,11 +80,12 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal }) =
     }
     setIsTransferring(true);
     try {
-      const sourceFile = await fetchImageAsBlob(sourceImage);
+      // Use the stored file directly if available, instead of re-fetching via an object URL.
+      const fileToSend = sourceFile || await fetchImageAsBlob(sourceImage);
       const referenceFile = await fetchImageAsBlob(selectedShade.src);
 
       const formData = new FormData();
-      formData.append('source', sourceFile);
+      formData.append('source', fileToSend);
       formData.append('reference', referenceFile);
 
       // Replace with your actual API URL
