@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useAppDispatch } from "@/redux/hooks";
 import { addToCart } from "@/redux/features/cartSlice";
 import { toast } from "react-hot-toast";
+import { API_CONFIG } from "@/config";
 
 interface CartItem {
   id: string;
@@ -54,7 +55,7 @@ const DetailPage = () => {
       }
     };
 
-    fetchProduct();
+      fetchProduct();
   }, [params?.id]);
 
   const formatPrice = (price: any) => {
@@ -75,11 +76,11 @@ const DetailPage = () => {
     
     // If img is a MongoDB ObjectId, use the GridFS endpoint
     if (typeof productData.img === 'string' && productData.img.length === 24) {
-      return `http://localhost:5000/api/images/${productData.img}`;
+      return `https://makeupmongo.duckdns.org/api/images/${productData.img}`;
     }
     // If mainImage is a MongoDB ObjectId, use the GridFS endpoint
     if (typeof productData.mainImage === 'string' && productData.mainImage.length === 24) {
-      return `http://localhost:5000/api/images/${productData.mainImage}`;
+      return `https://makeupmongo.duckdns.org/api/images/${productData.mainImage}`;
     }
     // If no valid image ID is found, return empty string to trigger error handling
     return '';
@@ -108,7 +109,7 @@ const DetailPage = () => {
     }
     return {
       name: shade.name,
-      src: refId.length === 24 ? `http://localhost:5000/api/images/${refId}` : '',
+      src: refId.length === 24 ? `${API_CONFIG.API_URL}/images/${refId}` : '',
     };
   }) || [];
 
