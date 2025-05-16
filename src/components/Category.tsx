@@ -1,8 +1,8 @@
 import React from "react";
-import { Whisper } from "next/font/google";
+import { Playfair_Display } from "next/font/google";
 import CategoryCard from "./CategoryCard";
 
-const whisper = Whisper({ subsets: ["latin"], weight: ["400"] });
+const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400"] });
 
 const data = [
   {
@@ -26,7 +26,7 @@ const Category = () => {
   return (
     <div className="bg-[url(/cats__bg.jpg)] bg-no-repeat py-16 mt-32">
       <div className="container text-center text-white">
-        <h3 className={`${whisper.className} text-[40px]`}>
+        <h3 className={`${playfair.className} text-[40px]`}>
           Favorite category
         </h3>
         <h2 className="text-[40px] font-medium">Top Category</h2>

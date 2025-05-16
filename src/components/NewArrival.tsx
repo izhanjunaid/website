@@ -1,10 +1,10 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Whisper } from "next/font/google";
+import { Playfair_Display } from "next/font/google";
 import ProductCard from "./ProductCard";
 import { IProduct, api } from "@/utils/api";
 
-const whisper = Whisper({ subsets: ["latin"], weight: ["400"] });
+const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400"] });
 
 const NewArrival = () => {
   const [products, setProducts] = useState<IProduct[]>([]);
@@ -83,7 +83,7 @@ const NewArrival = () => {
   return (
     <div className="container pt-32">
       <div className="text-center">
-        <h3 className={`${whisper.className} text-[40px] text-gray-500`}>
+        <h3 className={`${playfair.className} text-[40px] text-gray-500`}>
           For your beauty
         </h3>
         <h2 className="font-semibold text-5xl">New Arrival</h2>
