@@ -35,6 +35,12 @@ const DetailPage = () => {
 
   useEffect(() => {
     const fetchProduct = async () => {
+      if (!params?.id) {
+        setError('Product ID is missing');
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         const data = await api.getProduct(params.id as string);
@@ -48,10 +54,8 @@ const DetailPage = () => {
       }
     };
 
-    if (params.id) {
-      fetchProduct();
-    }
-  }, [params.id]);
+    fetchProduct();
+  }, [params?.id]);
 
   const formatPrice = (price: any) => {
     if (typeof price === 'object' && price.$numberInt) {
