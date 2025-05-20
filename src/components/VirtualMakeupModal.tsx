@@ -1,8 +1,11 @@
-import React, { useState, ChangeEvent } from 'react';
+"use client";
+
+import React, { useState, ChangeEvent, useEffect } from 'react';
 import { API_CONFIG } from '../config';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
+import NextImage from 'next/image';  // renamed import here
 import { AiOutlineShoppingCart } from 'react-icons/ai';
+import * as faceapi from 'face-api.js';
 
 interface ShadeOption {
   name: string;
@@ -42,27 +45,123 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
   const [skinSat, setSkinSat] = useState(1.0);
   const [eyeSat, setEyeSat] = useState(1.0);
 
-  // Handlers for file uploads
+  // Validation states for source image
+  const [validationMessage, setValidationMessage] = useState('');
+  const [modelsLoaded, setModelsLoaded] = useState(false);
+
+  // Load face-api models once
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        const MODEL_URL = '/models';
+        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+        setModelsLoaded(true);
+        setValidationMessage('Models loaded. Please upload your photo.');
+      } catch {
+        setValidationMessage('Failed to load face detection models.');
+      }
+    };
+    loadModels();
+  }, []);
+
+  // Generic file upload handler for other uploads (unchanged)
   const handleFileUpload = (setter: React.Dispatch<React.SetStateAction<File | null>>, setterImg?: React.Dispatch<React.SetStateAction<string | null>>) =>
     (event: ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      const file = event.target.files[0];
+      if (event.target.files && event.target.files[0]) {
+        const file = event.target.files[0];
         setter(file);
         if (setterImg) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
             if (e.target?.result) setterImg(e.target.result as string);
-      };
-      reader.readAsDataURL(file);
+          };
+          reader.readAsDataURL(file);
         }
       }
     };
 
-  // Handle shade selection
+  // Brightness check helper
+  const checkBrightness = (image: HTMLImageElement) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return 0;
+    canvas.width = image.width;
+    canvas.height = image.height;
+    ctx.drawImage(image, 0, 0, image.width, image.height);
+    const imgData = ctx.getImageData(0, 0, image.width, image.height);
+    const data = imgData.data;
+    let colorSum = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const brightness = (r + g + b) / 3;
+      colorSum += brightness;
+    }
+    return colorSum / (image.width * image.height);
+  };
+
+  // Validated source image upload handler with face & lighting checks
+  const handleSourceImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    setValidationMessage('');
+    if (!modelsLoaded) {
+      setValidationMessage('Face detection models are still loading...');
+      return;
+    }
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    const img = new Image(); // This is the global browser Image constructor
+
+    img.onload = async () => {
+      if (img.width < 300 || img.height < 300) {
+        setValidationMessage('Image resolution too low. Please upload a photo at least 300x300 pixels.');
+        return;
+      }
+      if (checkBrightness(img) < 70) {
+        setValidationMessage('Image is too dark. Please upload a well-lit photo.');
+        return;
+      }
+      try {
+        const detections = await faceapi.detectAllFaces(img, new faceapi.TinyFaceDetectorOptions());
+        if (detections.length === 0) {
+          setValidationMessage('No face detected. Please upload a clear photo.');
+          return;
+        }
+        if (detections.length > 1) {
+          setValidationMessage('Multiple faces detected. Please upload only one face.');
+          return;
+        }
+        const box = detections[0].box;
+        const faceWidthRatio = box.width / img.width;
+        const faceHeightRatio = box.height / img.height;
+        if (faceWidthRatio < 0.3 || faceHeightRatio < 0.3) {
+          setValidationMessage('Face too small. Please upload a close-up photo.');
+          return;
+        }
+        setSourceFile(file);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (e.target?.result) setSourceImage(e.target.result as string);
+        };
+        reader.readAsDataURL(file);
+        setValidationMessage('Image is valid!');
+      } catch {
+        setValidationMessage('Error during face detection.');
+      }
+    };
+
+    img.onerror = () => {
+      setValidationMessage('Failed to load the image.');
+    };
+    img.src = url;
+  };
+
+  // Handle shade selection (unchanged)
   const handleShadeSelected = (shade: ShadeOption) => {
     setSelectedShade(shade);
     const region = getRegionByCategory(category);
-    // For demo, we use the image URL as a File-like object (in real app, fetch and convert to File)
     fetch(shade.src)
       .then(res => res.blob())
       .then(blob => {
@@ -73,7 +172,7 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
       });
   };
 
-  // Transfer Makeup
+  // Transfer Makeup (unchanged)
   const handleTransferMakeup = async () => {
     if (!sourceFile || !selectedShade) {
       alert('Please upload a source image and select a shade.');
@@ -81,10 +180,7 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
     }
     setIsTransferring(true);
     try {
-      // Convert the selected shade to a File (already done in your handleShadeSelected)
       const region = getRegionByCategory(category);
-
-      // Use the selected file for all three reference fields
       let refFile: File | null = null;
       if (region === 'lip') refFile = refLipFile;
       else if (region === 'eye') refFile = refEyeFile;
@@ -96,7 +192,6 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
         return;
       }
 
-      // Set saturations: only the selected region gets the slider value, others get 0
       const lipS = region === 'lip' ? lipSat : 0;
       const skinS = region === 'skin' ? skinSat : 0;
       const eyeS = region === 'eye' ? eyeSat : 0;
@@ -110,7 +205,6 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
       formData.append('skin_sat', skinS.toString());
       formData.append('eye_sat', eyeS.toString());
 
-      // Replace with your actual API URL
       const apiUrl = `${API_CONFIG.MAKEUP_API_URL}/transfer/region-specific`;
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -150,7 +244,7 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
         style={{ maxHeight: '90vh', overflowY: 'auto' }}
       >
         <motion.button
-          whileHover={{ scale: 1.15, rotate: 90, backgroundColor: '#fecaca' /* red-200 */ }}
+          whileHover={{ scale: 1.15, rotate: 90, backgroundColor: '#fecaca' }}
           whileTap={{ scale: 0.9 }}
           onClick={closeModal}
           className="absolute top-5 right-5 text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors text-2xl p-2 rounded-full"
@@ -172,55 +266,64 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
             animate={{ x: 0, opacity: 1, transition: { delay: 0.3, type: "spring", stiffness: 120 } }}
             className="space-y-5"
           >
-            <label className="block text-lg font-semibold text-neutral-700 dark:text-neutral-300 text-left">Your Photo</label>
+            <label className="block text-lg font-semibold text-neutral-700 dark:text-neutral-300 text-left">
+              Your Photo
+            </label>
             <div className="relative group">
               <input
                 type="file"
                 accept="image/*"
-                onChange={handleFileUpload(setSourceFile, setSourceImage)}
+                onChange={handleSourceImageUpload}
                 className="hidden"
                 id="source-upload"
               />
               <motion.label
                 htmlFor="source-upload"
-                whileHover={{ borderColor: '#f472b6' /* pink-500 */ }}
+                whileHover={{ borderColor: '#f472b6' }}
                 className="block w-full p-6 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-xl cursor-pointer hover:border-pink-400 dark:hover:border-pink-500 transition-colors group-hover:bg-pink-50 dark:group-hover:bg-neutral-700/50"
               >
                 <div className="flex flex-col items-center">
-                  <motion.svg 
+                  <motion.svg
                     whileHover={{ scale: 1.1 }}
-                    className="w-12 h-12 text-pink-500 dark:text-pink-400 mb-3" 
-                    fill="none" 
-                    stroke="currentColor" 
+                    className="w-12 h-12 text-pink-500 dark:text-pink-400 mb-3"
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </motion.svg>
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">Drop image or <span className='text-pink-600 dark:text-pink-400 font-semibold'>Browse</span></span>
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                    Drop image or <span className="text-pink-600 dark:text-pink-400 font-semibold">Browse</span>
+                  </span>
                 </div>
               </motion.label>
             </div>
-            {sourceImage && (
-              <motion.div className="relative w-full aspect-square">
-                {sourceImage && !imgError ? (
-                  <Image
-                    src={sourceImage}
-                    alt="Source"
-                    layout="fill"
-                    objectFit="cover"
-                    className="transition-transform duration-500 group-hover:scale-105"
-                    onError={() => setImgError(true)}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-neutral-100 dark:bg-neutral-700 flex flex-col items-center justify-center text-neutral-400">
-                    <AiOutlineShoppingCart className="text-5xl opacity-40" />
-                    <span className="mt-2 text-sm">No Image</span>
-                  </div>
-                )}
+
+            {/* Validation message */}
+            {validationMessage && (
+              <p className="mt-2 text-sm text-red-600 dark:text-red-400">{validationMessage}</p>
+            )}
+
+            {sourceImage && !imgError ? (
+              <motion.div className="relative w-full aspect-square mt-4 rounded-lg overflow-hidden shadow-md">
+                <NextImage
+                  src={sourceImage}
+                  alt="Source"
+                  layout="fill"
+                  objectFit="cover"
+                  className="transition-transform duration-500 group-hover:scale-105"
+                  onError={() => setImgError(true)}
+                />
               </motion.div>
+            ) : (
+              <div className="w-full h-64 bg-neutral-100 dark:bg-neutral-700 flex flex-col items-center justify-center text-neutral-400 rounded-lg">
+                <AiOutlineShoppingCart className="text-5xl opacity-40" />
+                <span className="mt-2 text-sm">No Image</span>
+              </div>
             )}
           </motion.div>
 
+          {/* Shades UI unchanged */}
           <motion.div
             initial={{ x: 30, opacity: 0 }}
             animate={{ x: 0, opacity: 1, transition: { delay: 0.4, type: "spring", stiffness: 120 } }}
@@ -232,7 +335,7 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
                 <motion.div
                   key={shade.name}
                   initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0, transition: { delay: 0.5 + index * 0.05, type: "spring", stiffness:100 } }}
+                  animate={{ opacity: 1, y: 0, transition: { delay: 0.5 + index * 0.05, type: "spring", stiffness: 100 } }}
                   whileHover={{ scale: 1.08, y: -2, boxShadow: "0px 5px 15px rgba(0,0,0,0.1)" }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handleShadeSelected(shade)}
@@ -244,7 +347,7 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
                 >
                   <motion.div className="relative w-10 h-10 sm:w-12 sm:h-12">
                     {shade.src && !imgError ? (
-                      <Image
+                      <NextImage
                         src={shade.src}
                         alt={shade.name}
                         layout="fill"
@@ -266,23 +369,21 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
           </motion.div>
         </div>
 
+        {/* Saturation sliders unchanged */}
         <motion.div
           initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1, transition: { delay: 0.6, type: "spring", stiffness: 100 } }}
           className="space-y-5 mb-8"
         >
-          {[ { label: 'Lip Saturation', value: lipSat, setter: setLipSat, regionType: 'lip' },
-             { label: 'Skin Saturation', value: skinSat, setter: setSkinSat, regionType: 'skin' },
-             { label: 'Eye Saturation', value: eyeSat, setter: setEyeSat, regionType: 'eye' },
+          {[ 
+            { label: 'Lip Saturation', value: lipSat, setter: setLipSat, regionType: 'lip' },
+            { label: 'Skin Saturation', value: skinSat, setter: setSkinSat, regionType: 'skin' },
+            { label: 'Eye Saturation', value: eyeSat, setter: setEyeSat, regionType: 'eye' },
           ].map(control => (
             <div key={control.label} className="bg-neutral-50 dark:bg-neutral-700/60 p-4 rounded-lg shadow-sm">
               <div className="flex justify-between items-center mb-1">
-                 <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  {control.label}
-                </label>
-                <span className="text-sm font-mono text-pink-600 dark:text-pink-400 bg-pink-100 dark:bg-pink-600/30 px-2 py-0.5 rounded">
-                  {control.value.toFixed(1)}
-                </span>
+                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{control.label}</label>
+                <span className="text-sm font-mono text-pink-600 dark:text-pink-400 bg-pink-100 dark:bg-pink-600/30 px-2 py-0.5 rounded">{control.value.toFixed(1)}</span>
               </div>
               <input
                 type="range"
@@ -293,15 +394,16 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
                 onChange={e => control.setter(Number(e.target.value))}
                 disabled={region !== control.regionType}
                 className={`w-full h-2 rounded-lg appearance-none cursor-pointer transition-opacity duration-200 ${
-                  region === control.regionType 
-                  ? 'bg-pink-200 dark:bg-pink-700 slider-thumb-pink' 
-                  : 'bg-neutral-200 dark:bg-neutral-600 opacity-60 slider-thumb-neutral'
+                  region === control.regionType
+                    ? 'bg-pink-200 dark:bg-pink-700 slider-thumb-pink'
+                    : 'bg-neutral-200 dark:bg-neutral-600 opacity-60 slider-thumb-neutral'
                 }`}
               />
             </div>
           ))}
         </motion.div>
 
+        {/* Apply Makeup button unchanged */}
         <motion.button
           whileHover={{ scale: 1.03, boxShadow: "0px 8px 25px rgba(236, 72, 153, 0.4)" }}
           whileTap={{ scale: 0.97 }}
@@ -333,6 +435,7 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
           )}
         </motion.button>
 
+        {/* Result image display unchanged */}
         <AnimatePresence>
           {resultImage && (
             <motion.div
@@ -344,7 +447,7 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
               <h3 className="text-xl font-semibold mb-4 text-neutral-800 dark:text-neutral-100">Your Masterpiece!</h3>
               <motion.div className="relative w-full aspect-square">
                 {resultImage && !imgError ? (
-                  <Image
+                  <NextImage
                     src={resultImage}
                     alt="Result"
                     layout="fill"
