@@ -27,7 +27,7 @@ const NewArrival = () => {
 
       // Extract unique categories from products
       const categories = Array.from(
-        new Set(data.map((product) => product.category.toLowerCase()))
+        new Set(data.map((product) => product.category?.toLowerCase() || 'Uncategorized'))
       );
 
       // Create tabs array with "All" first + unique categories with capitalization
@@ -63,7 +63,7 @@ const NewArrival = () => {
     } else {
       // Filter products locally by category
       const filtered = allProducts.filter(
-        (product) => product.category.toLowerCase() === category
+        (product) => product.category?.toLowerCase() === category
       );
       setDisplayedProducts(filtered);
 
