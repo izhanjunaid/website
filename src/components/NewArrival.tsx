@@ -7,12 +7,12 @@ import { IProduct, api } from "@/utils/api";
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400"] });
 
 const NewArrival = () => {
-  const [products, setProducts] = useState<IProduct[]>([]);
+  const [allProducts, setAllProducts] = useState<IProduct[]>([]);
+  const [displayedProducts, setDisplayedProducts] = useState<IProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState(0);
-
-  const tabsData = ["All", "Lipsticks", "Blush", "Makeup"];
+  const [tabsData, setTabsData] = useState<string[]>([]);
 
   useEffect(() => {
     fetchProducts();
@@ -22,45 +22,56 @@ const NewArrival = () => {
     try {
       setLoading(true);
       const data = await api.getProducts();
-      setProducts(data);
+      setAllProducts(data);
+      setDisplayedProducts(data);
+
+      // Extract unique categories from products
+      const categories = Array.from(
+        new Set(data.map((product) => product.category.toLowerCase()))
+      );
+
+      // Create tabs array with "All" first + unique categories with capitalization
+      const tabs = ["All", ...categories.map(capitalize)];
+      setTabsData(tabs);
+
       if (data.length === 0) {
-        setError('No products available at the moment');
+        setError("No products available at the moment");
       } else {
         setError(null);
       }
     } catch (err) {
-      setError('Failed to fetch products');
-      console.error('Error fetching products:', err);
-      setProducts([]);
+      setError("Failed to fetch products");
+      console.error("Error fetching products:", err);
+      setAllProducts([]);
+      setDisplayedProducts([]);
+      setTabsData(["All"]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleTab = async (index: number) => {
+  const capitalize = (s: string) =>
+    s.charAt(0).toUpperCase() + s.slice(1);
+
+  const handleTab = (index: number) => {
     setSelectedTab(index);
     const category = tabsData[index].toLowerCase();
 
-    try {
-      setLoading(true);
-      let data;
-      if (category === "all") {
-        data = await api.getProducts();
-      } else {
-        data = await api.getProductsByCategory(category);
-      }
-      setProducts(data);
-      if (data.length === 0) {
+    if (category === "all") {
+      setDisplayedProducts(allProducts);
+      setError(null);
+    } else {
+      // Filter products locally by category
+      const filtered = allProducts.filter(
+        (product) => product.category.toLowerCase() === category
+      );
+      setDisplayedProducts(filtered);
+
+      if (filtered.length === 0) {
         setError(`No ${category} products available at the moment`);
       } else {
         setError(null);
       }
-    } catch (err) {
-      setError('Failed to fetch products');
-      console.error('Error fetching products:', err);
-      setProducts([]);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -72,7 +83,7 @@ const NewArrival = () => {
     );
   }
 
-  if (error) {
+  if (error && displayedProducts.length === 0) {
     return (
       <div className="container pt-32 text-center">
         <h2 className="text-2xl text-red-500">{error}</h2>
@@ -93,7 +104,7 @@ const NewArrival = () => {
             <li
               key={text}
               className={`${
-                selectedTab === index && "text-accent"
+                selectedTab === index ? "text-accent" : ""
               } cursor-pointer hover:text-accent`}
               onClick={() => handleTab(index)}
             >
@@ -103,12 +114,9 @@ const NewArrival = () => {
         </ul>
 
         <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 pt-8">
-          {Array.isArray(products) && products.length > 0 ? (
-            products.map((product) => (
-              <ProductCard
-                key={product._id}
-                {...product}
-              />
+          {displayedProducts.length > 0 ? (
+            displayedProducts.map((product) => (
+              <ProductCard key={product._id} {...product} />
             ))
           ) : (
             <div className="col-span-full text-center py-8">

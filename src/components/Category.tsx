@@ -12,7 +12,7 @@ const data = [
   },
   {
     img: "/category__2.jpg",
-    type: "Nail & Wax",
+    type: "Nail & ",
     quantity: "(8 Items)",
   },
   {

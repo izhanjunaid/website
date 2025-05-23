@@ -34,10 +34,10 @@ const ProductCard = ({ _id, img, mainImage, name, price, sale, rating = 0 }: IPr
 
   const getImageUrlToDisplay = () => {
     if (typeof img === 'string' && img.length === 24) {
-      return `http://localhost:5000/api/images/${img}`;
+      return `https://makeupmongo.duckdns.org/api/images/${img}`;
     }
     if (typeof mainImage === 'string' && mainImage.length === 24) {
-      return `http://localhost:5000/api/images/${mainImage}`;
+      return `https://makeupmongo.duckdns.org/api/images/${mainImage}`;
     }
     return ''; 
   };
