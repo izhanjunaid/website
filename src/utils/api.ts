@@ -39,14 +39,34 @@ interface ApiResponse<T> {
 export const api = {
   // Get all products
   getProducts: async (): Promise<IProduct[]> => {
-    const response = await fetch(`${API_URL}/products`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch products');
+    try {
+      const allProducts: IProduct[] = [];
+      let currentPage = 1;
+      let totalPages = 1;
+
+      while (currentPage <= totalPages) {
+        const response = await fetch(`${API_URL}/products?page=${currentPage}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch products');
+        }
+        const data = await response.json();
+        
+        // Add products from this page to our array
+        allProducts.push(...data.products);
+        
+        // Update pagination info
+        currentPage = data.currentPage + 1;
+        totalPages = data.totalPages;
+        
+        console.log(`Fetched page ${data.currentPage} of ${data.totalPages}`);
+      }
+
+      console.log('Total products fetched:', allProducts.length);
+      return allProducts;
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      throw error;
     }
-    const data = await response.json();
-    console.log('API Response:', data);
-    // Handle both array and object responses
-    return Array.isArray(data) ? data : data.products || [];
   },
 
   // Get single product
