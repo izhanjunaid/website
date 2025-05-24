@@ -17,6 +17,13 @@ const nextConfig = {
   images: {
     domains: API_CONFIG.IMAGE_DOMAINS,
   },
+  optimizeFonts: true,
+  // Add font optimization settings
+  fontOptimization: {
+    preload: true,
+    inlineDataURLLimit: 8192,
+    domains: ['fonts.gstatic.com']
+  }
 }
 
 module.exports = nextConfig

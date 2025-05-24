@@ -3,15 +3,13 @@
 import React, { useState, useRef, useEffect, ChangeEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { Playfair_Display } from "next/font/google";
 import { IoClose } from "react-icons/io5";
 import { BsCamera } from "react-icons/bs";
 import { RiUploadCloud2Line } from "react-icons/ri";
 import { FiCheck } from "react-icons/fi";
 import { API_CONFIG } from "@/config";
+import { playfair } from "@/config/fonts";
 import * as faceapi from 'face-api.js';
-
-const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "500", "600"] });
 
 interface ShadeOption {
   name: string;
