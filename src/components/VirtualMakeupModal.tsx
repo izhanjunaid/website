@@ -1,11 +1,17 @@
 "use client";
 
-import React, { useState, ChangeEvent, useEffect } from 'react';
-import { API_CONFIG } from '../config';
-import { motion, AnimatePresence } from 'framer-motion';
-import NextImage from 'next/image';  // renamed import here
-import { AiOutlineShoppingCart } from 'react-icons/ai';
+import React, { useState, useRef, useEffect, ChangeEvent } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
+import { Playfair_Display } from "next/font/google";
+import { IoClose } from "react-icons/io5";
+import { BsCamera } from "react-icons/bs";
+import { RiUploadCloud2Line } from "react-icons/ri";
+import { FiCheck } from "react-icons/fi";
+import { API_CONFIG } from "@/config";
 import * as faceapi from 'face-api.js';
+
+const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "500", "600"] });
 
 interface ShadeOption {
   name: string;
@@ -13,8 +19,9 @@ interface ShadeOption {
 }
 
 interface VirtualMakeupModalProps {
-  closeModal: () => void;
-  shades: ShadeOption[];
+  isOpen: boolean;
+  onClose: () => void;
+  shades?: ShadeOption[];
   category?: string;
 }
 
@@ -22,13 +29,13 @@ function getRegionByCategory(category: string = ''): 'lip' | 'eye' | 'skin' {
   const lips = ['lipstick'];
   const eyes = ['eyeshadow', 'mascara', 'eyeliner'];
   const skin = ['foundation', 'blush', 'concealer'];
-  if (lips.includes(category.toLowerCase())) return 'lip';
-  if (eyes.includes(category.toLowerCase())) return 'eye';
-  if (skin.includes(category.toLowerCase())) return 'skin';
+  if (lips.includes(category?.toLowerCase())) return 'lip';
+  if (eyes.includes(category?.toLowerCase())) return 'eye';
+  if (skin.includes(category?.toLowerCase())) return 'skin';
   return 'skin'; // default fallback
 }
 
-const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, shades, category }) => {
+const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualMakeupModalProps) => {
   // State for images and files
   const [sourceImage, setSourceImage] = useState<string | null>(null);
   const [sourceFile, setSourceFile] = useState<File | null>(null);
@@ -45,11 +52,17 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
   const [skinSat, setSkinSat] = useState(1.0);
   const [eyeSat, setEyeSat] = useState(1.0);
 
-  // Validation states for source image
+  // Camera states
+  const [showCamera, setShowCamera] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+
+  // Validation states
   const [validationMessage, setValidationMessage] = useState('');
   const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [activeStep, setActiveStep] = useState(1);
 
-  // Load face-api models once
+  // Load face-api models
   useEffect(() => {
     const loadModels = async () => {
       try {
@@ -64,101 +77,53 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
     loadModels();
   }, []);
 
-  // Generic file upload handler for other uploads (unchanged)
-  const handleFileUpload = (setter: React.Dispatch<React.SetStateAction<File | null>>, setterImg?: React.Dispatch<React.SetStateAction<string | null>>) =>
-    (event: ChangeEvent<HTMLInputElement>) => {
-      if (event.target.files && event.target.files[0]) {
-        const file = event.target.files[0];
-        setter(file);
-        if (setterImg) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            if (e.target?.result) setterImg(e.target.result as string);
-          };
-          reader.readAsDataURL(file);
-        }
+  // Camera functions
+  const startCamera = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      setStream(mediaStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
       }
-    };
-
-  // Brightness check helper
-  const checkBrightness = (image: HTMLImageElement) => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return 0;
-    canvas.width = image.width;
-    canvas.height = image.height;
-    ctx.drawImage(image, 0, 0, image.width, image.height);
-    const imgData = ctx.getImageData(0, 0, image.width, image.height);
-    const data = imgData.data;
-    let colorSum = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      const brightness = (r + g + b) / 3;
-      colorSum += brightness;
+      setShowCamera(true);
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      alert('Unable to access camera. Please make sure you have granted camera permissions.');
     }
-    return colorSum / (image.width * image.height);
   };
 
-  // Validated source image upload handler with face & lighting checks
-  const handleSourceImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
-    setValidationMessage('');
-    if (!modelsLoaded) {
-      setValidationMessage('Face detection models are still loading...');
-      return;
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
     }
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const url = URL.createObjectURL(file);
-    const img = new Image(); // This is the global browser Image constructor
-
-    img.onload = async () => {
-      if (img.width < 300 || img.height < 300) {
-        setValidationMessage('Image resolution too low. Please upload a photo at least 300x300 pixels.');
-        return;
-      }
-      if (checkBrightness(img) < 70) {
-        setValidationMessage('Image is too dark. Please upload a well-lit photo.');
-        return;
-      }
-      try {
-        const detections = await faceapi.detectAllFaces(img, new faceapi.TinyFaceDetectorOptions());
-        if (detections.length === 0) {
-          setValidationMessage('No face detected. Please upload a clear photo.');
-          return;
-        }
-        if (detections.length > 1) {
-          setValidationMessage('Multiple faces detected. Please upload only one face.');
-          return;
-        }
-        const box = detections[0].box;
-        const faceWidthRatio = box.width / img.width;
-        const faceHeightRatio = box.height / img.height;
-        if (faceWidthRatio < 0.3 || faceHeightRatio < 0.3) {
-          setValidationMessage('Face too small. Please upload a close-up photo.');
-          return;
-        }
-        setSourceFile(file);
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (e.target?.result) setSourceImage(e.target.result as string);
-        };
-        reader.readAsDataURL(file);
-        setValidationMessage('Image is valid!');
-      } catch {
-        setValidationMessage('Error during face detection.');
-      }
-    };
-
-    img.onerror = () => {
-      setValidationMessage('Failed to load the image.');
-    };
-    img.src = url;
+    setShowCamera(false);
   };
 
-  // Handle shade selection (unchanged)
+  const capturePhoto = () => {
+    if (videoRef.current) {
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(videoRef.current, 0, 0);
+        const imageDataUrl = canvas.toDataURL('image/jpeg');
+        setSourceImage(imageDataUrl);
+        // Convert data URL to File
+        fetch(imageDataUrl)
+          .then(res => res.blob())
+          .then(blob => {
+            const file = new File([blob], "captured-photo.jpg", { type: "image/jpeg" });
+            setSourceFile(file);
+          });
+        setActiveStep(2);
+        stopCamera();
+      }
+    }
+  };
+
+  // Handle shade selection
   const handleShadeSelected = (shade: ShadeOption) => {
     setSelectedShade(shade);
     const region = getRegionByCategory(category);
@@ -172,7 +137,7 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
       });
   };
 
-  // Transfer Makeup (unchanged)
+  // Transfer Makeup
   const handleTransferMakeup = async () => {
     if (!sourceFile || !selectedShade) {
       alert('Please upload a source image and select a shade.');
@@ -210,15 +175,18 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
         method: 'POST',
         body: formData,
       });
+      
       if (!response.ok) {
         const errorData = await response.json();
         alert('Error during makeup transfer: ' + errorData.detail);
         setIsTransferring(false);
         return;
       }
+      
       const blob = await response.blob();
       const resultUrl = URL.createObjectURL(blob);
       setResultImage(resultUrl);
+      setActiveStep(3);
     } catch (error) {
       alert('Transfer failed: ' + error);
     } finally {
@@ -226,247 +194,277 @@ const VirtualMakeupModal: React.FC<VirtualMakeupModalProps> = ({ closeModal, sha
     }
   };
 
-  // Determine which saturation slider should be enabled
-  const region = getRegionByCategory(category);
-
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1, transition: { duration: 0.3 } }}
-      exit={{ opacity: 0, transition: { duration: 0.3 } }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
-    >
-      <motion.div
-        initial={{ scale: 0.95, y: 30, opacity: 0 }}
-        animate={{ scale: 1, y: 0, opacity: 1, transition: { type: "spring", damping: 20, stiffness: 200, delay: 0.1 } }}
-        exit={{ scale: 0.95, y: 30, opacity: 0, transition: { duration: 0.2 } }}
-        className="relative w-full max-w-2xl text-center p-8 rounded-xl bg-white shadow-2xl dark:bg-neutral-800"
-        style={{ maxHeight: '90vh', overflowY: 'auto' }}
-      >
-        <motion.button
-          whileHover={{ scale: 1.15, rotate: 90, backgroundColor: '#fecaca' }}
-          whileTap={{ scale: 0.9 }}
-          onClick={closeModal}
-          className="absolute top-5 right-5 text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors text-2xl p-2 rounded-full"
-        >
-          &#10005;
-        </motion.button>
-
-        <motion.h2
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1, transition: { delay: 0.2, type: "spring", stiffness: 150 } }}
-          className="text-3xl font-bold mb-8 text-neutral-800 dark:text-neutral-100"
-        >
-          Virtual Makeup Studio
-        </motion.h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <motion.div
-            initial={{ x: -30, opacity: 0 }}
-            animate={{ x: 0, opacity: 1, transition: { delay: 0.3, type: "spring", stiffness: 120 } }}
-            className="space-y-5"
-          >
-            <label className="block text-lg font-semibold text-neutral-700 dark:text-neutral-300 text-left">
-              Your Photo
-            </label>
-            <div className="relative group">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleSourceImageUpload}
-                className="hidden"
-                id="source-upload"
-              />
-              <motion.label
-                htmlFor="source-upload"
-                whileHover={{ borderColor: '#f472b6' }}
-                className="block w-full p-6 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-xl cursor-pointer hover:border-pink-400 dark:hover:border-pink-500 transition-colors group-hover:bg-pink-50 dark:group-hover:bg-neutral-700/50"
-              >
-                <div className="flex flex-col items-center">
-                  <motion.svg
-                    whileHover={{ scale: 1.1 }}
-                    className="w-12 h-12 text-pink-500 dark:text-pink-400 mb-3"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </motion.svg>
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                    Drop image or <span className="text-pink-600 dark:text-pink-400 font-semibold">Browse</span>
-                  </span>
-                </div>
-              </motion.label>
-            </div>
-
-            {/* Validation message */}
-            {validationMessage && (
-              <p className="mt-2 text-sm text-red-600 dark:text-red-400">{validationMessage}</p>
-            )}
-
-            {sourceImage && !imgError ? (
-              <motion.div className="relative w-full aspect-square mt-4 rounded-lg overflow-hidden shadow-md">
-                <NextImage
-                  src={sourceImage}
-                  alt="Source"
-                  layout="fill"
-                  objectFit="cover"
-                  className="transition-transform duration-500 group-hover:scale-105"
-                  onError={() => setImgError(true)}
-                />
-              </motion.div>
-            ) : (
-              <div className="w-full h-64 bg-neutral-100 dark:bg-neutral-700 flex flex-col items-center justify-center text-neutral-400 rounded-lg">
-                <AiOutlineShoppingCart className="text-5xl opacity-40" />
-                <span className="mt-2 text-sm">No Image</span>
-              </div>
-            )}
-          </motion.div>
-
-          {/* Shades UI unchanged */}
-          <motion.div
-            initial={{ x: 30, opacity: 0 }}
-            animate={{ x: 0, opacity: 1, transition: { delay: 0.4, type: "spring", stiffness: 120 } }}
-            className="space-y-5"
-          >
-            <label className="block text-lg font-semibold text-neutral-700 dark:text-neutral-300 text-left">Select Shade</label>
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 max-h-60 overflow-y-auto pr-2">
-              {shades.map((shade, index) => (
-                <motion.div
-                  key={shade.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0, transition: { delay: 0.5 + index * 0.05, type: "spring", stiffness: 100 } }}
-                  whileHover={{ scale: 1.08, y: -2, boxShadow: "0px 5px 15px rgba(0,0,0,0.1)" }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleShadeSelected(shade)}
-                  className={`cursor-pointer p-1.5 rounded-lg transition-all duration-200 flex flex-col items-center space-y-1.5 ${
-                    selectedShade?.name === shade.name
-                      ? 'bg-pink-100 dark:bg-pink-700/50 ring-2 ring-pink-500 dark:ring-pink-400 shadow-md'
-                      : 'hover:bg-neutral-100 dark:hover:bg-neutral-700'
-                  }`}
-                >
-                  <motion.div className="relative w-10 h-10 sm:w-12 sm:h-12">
-                    {shade.src && !imgError ? (
-                      <NextImage
-                        src={shade.src}
-                        alt={shade.name}
-                        layout="fill"
-                        objectFit="cover"
-                        className="transition-transform duration-500 group-hover:scale-105"
-                        onError={() => setImgError(true)}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-neutral-100 dark:bg-neutral-700 flex flex-col items-center justify-center text-neutral-400">
-                        <AiOutlineShoppingCart className="text-5xl opacity-40" />
-                        <span className="mt-2 text-sm">No Image</span>
-                      </div>
-                    )}
-                  </motion.div>
-                  <span className="text-xs text-neutral-600 dark:text-neutral-300 text-center block truncate w-full">{shade.name}</span>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Saturation sliders unchanged */}
+    <AnimatePresence>
+      {isOpen && (
         <motion.div
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1, transition: { delay: 0.6, type: "spring", stiffness: 100 } }}
-          className="space-y-5 mb-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
         >
-          {[ 
-            { label: 'Lip Saturation', value: lipSat, setter: setLipSat, regionType: 'lip' },
-            { label: 'Skin Saturation', value: skinSat, setter: setSkinSat, regionType: 'skin' },
-            { label: 'Eye Saturation', value: eyeSat, setter: setEyeSat, regionType: 'eye' },
-          ].map(control => (
-            <div key={control.label} className="bg-neutral-50 dark:bg-neutral-700/60 p-4 rounded-lg shadow-sm">
-              <div className="flex justify-between items-center mb-1">
-                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{control.label}</label>
-                <span className="text-sm font-mono text-pink-600 dark:text-pink-400 bg-pink-100 dark:bg-pink-600/30 px-2 py-0.5 rounded">{control.value.toFixed(1)}</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="2"
-                step="0.1"
-                value={control.value}
-                onChange={e => control.setter(Number(e.target.value))}
-                disabled={region !== control.regionType}
-                className={`w-full h-2 rounded-lg appearance-none cursor-pointer transition-opacity duration-200 ${
-                  region === control.regionType
-                    ? 'bg-pink-200 dark:bg-pink-700 slider-thumb-pink'
-                    : 'bg-neutral-200 dark:bg-neutral-600 opacity-60 slider-thumb-neutral'
-                }`}
-              />
-            </div>
-          ))}
-        </motion.div>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={onClose}
+          />
 
-        {/* Apply Makeup button unchanged */}
-        <motion.button
-          whileHover={{ scale: 1.03, boxShadow: "0px 8px 25px rgba(236, 72, 153, 0.4)" }}
-          whileTap={{ scale: 0.97 }}
-          onClick={handleTransferMakeup}
-          disabled={isTransferring || !sourceFile || !selectedShade}
-          className={`w-full py-4 px-6 rounded-lg font-semibold text-white uppercase tracking-wider transition-all duration-200 flex items-center justify-center text-base shadow-md ${
-            isTransferring || !sourceFile || !selectedShade
-              ? 'bg-neutral-400 dark:bg-neutral-600 cursor-not-allowed'
-              : 'bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 dark:from-pink-600 dark:to-purple-700 dark:hover:from-pink-700 dark:hover:to-purple-800'
-          }`}
-        >
-          {isTransferring ? (
-            <>
-              <motion.svg 
-                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                initial={{ rotate: 0 }}
-                animate={{ rotate: 360, transition: { repeat: Infinity, duration: 1, ease: "linear" } }}
-                xmlns="http://www.w3.org/2000/svg" 
-                fill="none" 
-                viewBox="0 0 24 24"
-              >
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </motion.svg>
-              Processing...
-            </>
-          ) : (
-            'Apply Makeup'
-          )}
-        </motion.button>
-
-        {/* Result image display unchanged */}
-        <AnimatePresence>
-          {resultImage && (
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1, transition: { delay: 0.2, type: "spring", stiffness: 120 } }}
-              exit={{ opacity: 0, y: 20, scale: 0.95, transition: { duration: 0.2 } }}
-              className="mt-8"
+          {/* Modal Content */}
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="relative w-full max-w-4xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden"
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => {
+                stopCamera();
+                onClose();
+              }}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 
+                       dark:hover:text-gray-200 z-10"
             >
-              <h3 className="text-xl font-semibold mb-4 text-neutral-800 dark:text-neutral-100">Your Masterpiece!</h3>
-              <motion.div className="relative w-full aspect-square">
-                {resultImage && !imgError ? (
-                  <NextImage
+              <IoClose className="w-6 h-6" />
+            </button>
+
+            <div className="grid md:grid-cols-2">
+              {/* Left Section - Preview */}
+              <div className="relative h-[600px] bg-gradient-to-br from-pink-100 to-purple-50 
+                            dark:from-pink-950 dark:to-purple-950">
+                {showCamera ? (
+                  <div className="relative h-full">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    <button
+                      onClick={capturePhoto}
+                      className="absolute bottom-4 left-1/2 transform -translate-x-1/2 
+                               bg-pink-500 text-white px-6 py-2 rounded-full 
+                               hover:bg-pink-600 transition-colors"
+                    >
+                      Capture Photo
+                    </button>
+                  </div>
+                ) : resultImage ? (
+                  <Image
                     src={resultImage}
                     alt="Result"
                     layout="fill"
                     objectFit="cover"
-                    className="transition-transform duration-500 group-hover:scale-105"
-                    onError={() => setImgError(true)}
+                  />
+                ) : sourceImage ? (
+                  <Image
+                    src={sourceImage}
+                    alt="Preview"
+                    layout="fill"
+                    objectFit="cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-neutral-100 dark:bg-neutral-700 flex flex-col items-center justify-center text-neutral-400">
-                    <AiOutlineShoppingCart className="text-5xl opacity-40" />
-                    <span className="mt-2 text-sm">No Image</span>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center p-8">
+                      <BsCamera className="w-12 h-12 mx-auto mb-4 text-pink-300" />
+                      <p className="text-gray-500 dark:text-gray-400">
+                        Your preview will appear here
+                      </p>
+                    </div>
                   </div>
                 )}
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-    </motion.div>
+              </div>
+
+              {/* Right Section - Controls */}
+              <div className="p-8">
+                <h2 className={`${playfair.className} text-3xl font-medium mb-6 text-gray-800 dark:text-white`}>
+                  Virtual Makeup Studio
+                </h2>
+
+                {/* Steps Progress */}
+                <div className="flex items-center justify-between mb-12">
+                  {[
+                    { number: 1, title: "Upload Photo" },
+                    { number: 2, title: "Choose Shade" },
+                    { number: 3, title: "Result" }
+                  ].map((step, index) => (
+                    <div key={step.number} className="flex items-center">
+                      <div className={`
+                        flex items-center justify-center w-8 h-8 rounded-full 
+                        ${activeStep >= step.number 
+                          ? 'bg-pink-500 text-white' 
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}
+                      `}>
+                        {activeStep > step.number ? <FiCheck /> : step.number}
+                      </div>
+                      {index < 2 && (
+                        <div className={`
+                          w-12 h-0.5 mx-2
+                          ${activeStep > step.number 
+                            ? 'bg-pink-500' 
+                            : 'bg-gray-200 dark:bg-gray-700'}
+                        `} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Step 1: Upload Section */}
+                {activeStep === 1 && !showCamera && (
+                  <div className="space-y-6">
+                    <div className="relative border-2 border-dashed border-pink-200 dark:border-pink-800 
+                                  rounded-xl p-8 text-center hover:border-pink-300 dark:hover:border-pink-700 
+                                  transition-colors cursor-pointer group">
+                      <input
+                        type="file"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setSourceFile(file);
+                            setSourceImage(URL.createObjectURL(file));
+                            setActiveStep(2);
+                          }
+                        }}
+                      />
+                      <RiUploadCloud2Line className="w-12 h-12 mx-auto mb-4 text-pink-400 
+                                                   group-hover:text-pink-500 transition-colors" />
+                      <h3 className="text-lg font-medium mb-2 text-gray-800 dark:text-white">
+                        Upload Your Photo
+                      </h3>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">
+                        Drop your image here or click to browse
+                      </p>
+                    </div>
+
+                    <div className="text-center">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        or
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={startCamera}
+                      className="w-full py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white 
+                               rounded-xl font-medium hover:shadow-lg hover:shadow-pink-500/30 
+                               transition-all duration-300 flex items-center justify-center gap-2"
+                    >
+                      <BsCamera className="w-5 h-5" />
+                      Take a Photo
+                    </button>
+                  </div>
+                )}
+
+                {/* Step 2 & 3: Shade Selection and Controls */}
+                {(activeStep === 2 || activeStep === 3) && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-3 gap-4 max-h-[300px] overflow-y-auto">
+                      {shades.map((shade) => (
+                        <div
+                          key={shade.name}
+                          onClick={() => handleShadeSelected(shade)}
+                          className={`cursor-pointer p-2 rounded-lg transition-all ${
+                            selectedShade?.name === shade.name
+                              ? 'ring-2 ring-pink-500 bg-pink-50'
+                              : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="relative aspect-square mb-2">
+                            <Image
+                              src={shade.src}
+                              alt={shade.name}
+                              layout="fill"
+                              objectFit="cover"
+                              className="rounded-lg"
+                            />
+                          </div>
+                          <p className="text-sm text-center">{shade.name}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Saturation Controls */}
+                    <div className="space-y-4">
+                      {getRegionByCategory(category) === 'lip' && (
+                        <div>
+                          <label className="text-sm text-gray-600">Lip Saturation</label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="2"
+                            step="0.1"
+                            value={lipSat}
+                            onChange={(e) => setLipSat(parseFloat(e.target.value))}
+                            className="w-full"
+                          />
+                        </div>
+                      )}
+                      {getRegionByCategory(category) === 'skin' && (
+                        <div>
+                          <label className="text-sm text-gray-600">Skin Saturation</label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="2"
+                            step="0.1"
+                            value={skinSat}
+                            onChange={(e) => setSkinSat(parseFloat(e.target.value))}
+                            className="w-full"
+                          />
+                        </div>
+                      )}
+                      {getRegionByCategory(category) === 'eye' && (
+                        <div>
+                          <label className="text-sm text-gray-600">Eye Saturation</label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="2"
+                            step="0.1"
+                            value={eyeSat}
+                            onChange={(e) => setEyeSat(parseFloat(e.target.value))}
+                            className="w-full"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={handleTransferMakeup}
+                      disabled={isTransferring || !selectedShade}
+                      className="w-full py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white 
+                               rounded-xl font-medium hover:shadow-lg hover:shadow-pink-500/30 
+                               transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isTransferring ? 'Applying Makeup...' : activeStep === 3 ? 'Try Again' : 'Apply Makeup'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Tips */}
+                {activeStep === 1 && (
+                  <div className="mt-8 p-4 bg-pink-50 dark:bg-pink-950/30 rounded-xl">
+                    <h4 className="font-medium mb-2 text-gray-800 dark:text-white">
+                      Tips for best results:
+                    </h4>
+                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                      <li>• Ensure good lighting</li>
+                      <li>• Face the camera directly</li>
+                      <li>• Use a plain background</li>
+                      <li>• Remove glasses if possible</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

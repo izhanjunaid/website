@@ -101,17 +101,24 @@ const DetailPage = () => {
 
   // Map shades to the format expected by VirtualMakeupModal
   const mappedShades = productData?.shades?.map((shade) => {
+    console.log('Processing shade:', shade);
     let refId = '';
     if (typeof shade.referenceImage === 'string') {
       refId = shade.referenceImage;
+      console.log('String reference image:', refId);
     } else if (shade.referenceImage && typeof shade.referenceImage === 'object' && shade.referenceImage.$oid) {
       refId = shade.referenceImage.$oid;
+      console.log('Object reference image:', refId);
     }
-    return {
+    const shadeData = {
       name: shade.name,
       src: refId.length === 24 ? `${API_CONFIG.API_URL}/images/${refId}` : '',
     };
+    console.log('Mapped shade:', shadeData);
+    return shadeData;
   }) || [];
+
+  console.log('Final mapped shades:', mappedShades);
 
   if (loading) {
     return (
@@ -201,7 +208,8 @@ const DetailPage = () => {
 
             {isModalOpen && (
               <VirtualMakeupModal
-                closeModal={() => setIsModalOpen(false)}
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
                 shades={mappedShades}
                 category={productData.category}
               />

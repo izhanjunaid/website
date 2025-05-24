@@ -1,179 +1,178 @@
-import { addToCart } from "@/redux/features/cartSlice";
-import { useAppDispatch } from "@/redux/hooks";
-import { IProduct } from "@/utils/api";
+import React, { useState } from "react";
 import Image from "next/image";
-// import Link from "next/link"; // Link component is not used
-import { useRouter } from "next/navigation";
-import React from "react"; 
-import { toast } from "react-hot-toast";
-import {
-  AiFillStar,
-  AiOutlineStar,
-  AiOutlineHeart,
-  AiOutlineShoppingCart,
-} from "react-icons/ai";
+import Link from "next/link";
 import { motion } from "framer-motion";
+import { AiOutlineShoppingCart, AiOutlineHeart, AiFillStar } from "react-icons/ai";
+import { useAppDispatch } from "@/redux/hooks";
+import { addToCart } from "@/redux/features/cartSlice";
+import { toast } from "react-hot-toast";
+import { API_CONFIG } from "@/config";
 
-const ProductCard = ({ _id, img, mainImage, name, price, sale, rating = 0 }: IProduct) => {
+interface ProductCardProps {
+  _id: string;
+  name: string;
+  img?: string;
+  mainImage?: string;
+  price: {
+    $numberInt: string;
+  } | number | string;
+  sale?: boolean;
+  rating?: number;
+  category?: string;
+}
+
+const ProductCard: React.FC<ProductCardProps> = ({
+  _id,
+  name,
+  img,
+  mainImage,
+  price,
+  sale,
+  rating = 0,
+  category,
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const dispatch = useAppDispatch();
-  const router = useRouter();
 
-  const getRatingStars = () => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const emptyStars = 5 - fullStars;
-
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(<AiFillStar key={`full-${i}`} className="text-pink-500 dark:text-pink-400" />);
+  const formatPrice = (price: any) => {
+    if (typeof price === 'object' && price.$numberInt) {
+      return (Number(price.$numberInt) / 100).toFixed(2);
     }
-    for (let i = 0; i < emptyStars; i++) {
-      stars.push(<AiOutlineStar key={`empty-${i}`} className="text-pink-400 dark:text-pink-500" />); 
+    if (typeof price === 'string') {
+      return (Number(price) / 100).toFixed(2);
     }
-    return stars;
+    if (typeof price === 'number') {
+      return price.toFixed(2);
+    }
+    return '0.00';
   };
 
-  const getImageUrlToDisplay = () => {
+  const getImageUrl = () => {
+    // If img is a MongoDB ObjectId, use the GridFS endpoint
     if (typeof img === 'string' && img.length === 24) {
-      return `https://makeupmongo.duckdns.org/api/images/${img}`;
+      return `${API_CONFIG.API_URL}/images/${img}`;
     }
+    // If mainImage is a MongoDB ObjectId, use the GridFS endpoint
     if (typeof mainImage === 'string' && mainImage.length === 24) {
-      return `https://makeupmongo.duckdns.org/api/images/${mainImage}`;
+      return `${API_CONFIG.API_URL}/images/${mainImage}`;
     }
-    return ''; 
+    // If no valid image ID is found, return empty string to trigger error handling
+    return '';
   };
 
-  const imageUrl = getImageUrlToDisplay();
-
-  const formatPriceValue = (priceValue: any): string => {
-    let numericPrice: number;
-    if (typeof priceValue === 'object' && priceValue !== null && priceValue.$numberInt) {
-      numericPrice = Number(priceValue.$numberInt) / 100;
-    } else if (typeof priceValue === 'string') {
-      const cleanedPrice = priceValue.replace(/[^\d.-]/g, ''); 
-      numericPrice = Number(cleanedPrice);
-      // If the cleaned price is likely in cents (e.g. no decimal or large number)
-      if (!cleanedPrice.includes('.') || (numericPrice > 1000 && Math.floor(numericPrice) === numericPrice)){
-          numericPrice = numericPrice / 100;
-      }
-      if (isNaN(numericPrice)) numericPrice = 0; // Fallback for totally invalid strings
-
-    } else if (typeof priceValue === 'number') {
-      // Heuristic: if price is a large number with no decimal, assume cents
-      if (priceValue > 1000 && !priceValue.toString().includes('.')) { 
-        numericPrice = priceValue / 100;
-      } else {
-        numericPrice = priceValue;
-      }
-    } else {
-      numericPrice = 0;
-    }
-    return numericPrice.toFixed(2);
+  const handleAddToCart = () => {
+    dispatch(
+      addToCart({
+        id: _id,
+        name,
+        img: getImageUrl(),
+        price,
+        quantity: 1,
+      })
+    );
+    toast.success("Added to cart");
   };
-  const formattedPrice = formatPriceValue(price);
-
-  const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => { // Changed HTMLDivElement to HTMLButtonElement
-    e.stopPropagation(); 
-    const priceForCart = parseFloat(formattedPrice);
-    if (isNaN(priceForCart)) {
-        console.error("Invalid price for cart:", formattedPrice);
-        toast.error("Error adding product: Invalid price");
-        return;
-    }
-    const payload = {
-      id: _id,
-      name,
-      img: imageUrl,
-      price: priceForCart,
-      quantity: 1,
-    };
-    dispatch(addToCart(payload));
-    toast.success("Added To Cart", {
-      position: "bottom-center",
-      style: {
-        backgroundColor: '#333',
-        color: '#fff',
-      }
-    });
-  };
-
 
   return (
     <motion.div
-      className="bg-white dark:bg-neutral-800 rounded-xl shadow-lg overflow-hidden group cursor-pointer border border-transparent hover:border-pink-300 dark:hover:border-pink-600 transition-all duration-300"
-      onClick={() => router.push(`/details/${_id}`)}
-      whileHover={{ y: -5, boxShadow: "0px 10px 20px rgba(0,0,0,0.15)" }} // Slightly increased shadow on hover
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
+      exit={{ opacity: 0, y: 20 }}
+      whileHover={{ y: -5 }}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
+      className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
     >
-      <div className="relative w-full aspect-square"> 
-        {imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={name}
-            layout="fill"
-            objectFit="cover" 
-            className="transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="w-full h-full bg-neutral-100 dark:bg-neutral-700 flex flex-col items-center justify-center text-neutral-500 dark:text-neutral-400">
-            <AiOutlineShoppingCart className="text-5xl opacity-40" /> 
-            <span className="mt-2 text-sm">No Image</span>
+      {sale && (
+        <div className="absolute top-4 left-4 z-10">
+          <span className="bg-accent text-white text-xs font-medium px-2.5 py-1 rounded-full">
+            Sale
+          </span>
+        </div>
+      )}
+
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        className="absolute top-4 right-4 z-10 p-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white dark:hover:bg-gray-700 transition-all duration-300"
+      >
+        <AiOutlineHeart className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+      </motion.button>
+
+      <Link href={`/details/${_id}`}>
+        <div className="relative aspect-square overflow-hidden">
+          {!imageError ? (
+            <Image
+              src={getImageUrl()}
+              alt={name}
+              layout="fill"
+              objectFit="cover"
+              className="transform transition-transform duration-500 group-hover:scale-110"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+              <AiOutlineShoppingCart className="w-12 h-12 text-gray-400" />
+            </div>
+          )}
+        </div>
+
+        <div className="p-4">
+          <div className="flex items-center mb-2">
+            <div className="flex items-center text-yellow-400">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <AiFillStar
+                  key={index}
+                  className={`w-4 h-4 ${
+                    index < Math.floor(rating)
+                      ? 'text-yellow-400'
+                      : 'text-gray-300 dark:text-gray-600'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+              ({rating})
+            </span>
           </div>
-        )}
 
-        {sale && (
-          <motion.div 
-            initial={{scale:0.8, opacity:0, x: -10}}
-            animate={{scale:1, opacity:1, x:0}}
-            transition={{delay:0.2, type: "spring", stiffness:200, damping: 12}}
-            className="absolute top-3 left-3 bg-pink-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-md">
-            SALE
-          </motion.div>
-        )}
+          <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2 line-clamp-2">
+            {name}
+          </h3>
 
-        {/* Hover Actions Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent flex flex-col justify-end p-4 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out">
-          <motion.div 
-             initial={{ y: 20, opacity: 0}}
-             animate={{ y: 0, opacity: 1}}
-             exit={{y:20, opacity:0}}
-             transition={{delay: 0.1, duration:0.25, ease:"easeInOut"}}
-             className="flex justify-center gap-3" >
+          <div className="flex items-center justify-between">
+            <div className="text-accent font-semibold">
+              ${formatPrice(price)}
+            </div>
+
             <motion.button
-              whileHover={{ scale: 1.15, rotate: -5, backgroundColor: 'rgba(255,255,255,1)'}}
-              whileTap={{ scale: 0.9 }}
-              className="bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm w-11 h-11 text-lg text-neutral-700 dark:text-neutral-200 rounded-full flex items-center justify-center shadow-lg hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
-              onClick={(e) => { e.stopPropagation(); toast.success("Added to Wishlist!", {icon: '💖'}); }} 
-              aria-label="Add to wishlist"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={(e) => {
+                e.preventDefault();
+                handleAddToCart();
+              }}
+              className="p-2 bg-accent/10 hover:bg-accent text-accent hover:text-white rounded-full transition-all duration-300"
             >
-              <AiOutlineHeart />
+              <AiOutlineShoppingCart className="w-5 h-5" />
             </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.15, rotate: 5, backgroundColor: 'rgba(255,255,255,1)' }}
-              whileTap={{ scale: 0.9 }}
-              className="bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm w-11 h-11 text-lg text-neutral-700 dark:text-neutral-200 rounded-full flex items-center justify-center shadow-lg hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
-              onClick={handleAddToCart} 
-              aria-label="Add to cart"
-            >
-              <AiOutlineShoppingCart />
-            </motion.button>
-          </motion.div>
+          </div>
         </div>
-      </div>
+      </Link>
 
-      <div className="p-4 md:p-5">
-        <div className="flex items-center mb-1.5">
-          {getRatingStars()} 
-          {rating > 0 && <span className="ml-2 text-xs text-neutral-500 dark:text-neutral-400">({rating.toFixed(1)} / 5)</span>}
-        </div>
-        <h3 className="font-semibold text-base md:text-lg text-neutral-800 dark:text-neutral-100 truncate group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors duration-200 mb-1 h-6 md:h-7" title={name}>
-          {name}
-        </h3>
-        <p className="text-pink-600 dark:text-pink-400 font-bold text-lg md:text-xl">
-          ${formattedPrice}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ 
+          opacity: isHovered ? 1 : 0,
+          y: isHovered ? 0 : 20
+        }}
+        className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent"
+      >
+        <p className="text-sm text-white line-clamp-2">
+          {category && `Category: ${category}`}
         </p>
-      </div>
+      </motion.div>
     </motion.div>
   );
 };
