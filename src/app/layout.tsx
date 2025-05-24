@@ -17,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body style={{ backgroundColor: '#fdd9e5' }} className={`${inter.className} min-h-screen`}>
         <App>{children}</App>
       </body>
     </html>

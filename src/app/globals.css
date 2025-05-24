@@ -2,6 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-color: #fdd9e5;
+  --dark-background-color: #1F1B1D;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+  }
+}
+
+html,
+body {
+  min-height: 100vh;
+  background-color: var(--background-color);
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  html,
+  body {
+    background-color: var(--dark-background-color);
+  }
+}
+
 @layer components {
   .navLink {
     @apply text-[18px] hover:text-accent;

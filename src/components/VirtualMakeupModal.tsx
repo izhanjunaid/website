@@ -215,7 +215,8 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="relative w-full max-w-4xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden"
+            className="relative w-full max-w-4xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden 
+                     max-h-[90vh] md:max-h-[800px]"
           >
             {/* Close Button */}
             <button
@@ -229,9 +230,9 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
               <IoClose className="w-6 h-6" />
             </button>
 
-            <div className="grid md:grid-cols-2">
+            <div className="flex flex-col md:grid md:grid-cols-2 h-full overflow-hidden">
               {/* Left Section - Preview */}
-              <div className="relative h-[600px] bg-gradient-to-br from-pink-100 to-purple-50 
+              <div className="relative h-[300px] md:h-[600px] bg-gradient-to-br from-pink-100 to-purple-50 
                             dark:from-pink-950 dark:to-purple-950">
                 {showCamera ? (
                   <div className="relative h-full">
@@ -277,13 +278,13 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
               </div>
 
               {/* Right Section - Controls */}
-              <div className="p-8">
-                <h2 className={`${playfair.className} text-3xl font-medium mb-6 text-gray-800 dark:text-white`}>
+              <div className="p-4 md:p-8 overflow-y-auto">
+                <h2 className={`${playfair.className} text-2xl md:text-3xl font-medium mb-4 md:mb-6 text-gray-800 dark:text-white`}>
                   Virtual Makeup Studio
                 </h2>
 
                 {/* Steps Progress */}
-                <div className="flex items-center justify-between mb-12">
+                <div className="flex items-center justify-between mb-6 md:mb-12">
                   {[
                     { number: 1, title: "Upload Photo" },
                     { number: 2, title: "Choose Shade" },
@@ -291,7 +292,7 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
                   ].map((step, index) => (
                     <div key={step.number} className="flex items-center">
                       <div className={`
-                        flex items-center justify-center w-8 h-8 rounded-full 
+                        flex items-center justify-center w-6 h-6 md:w-8 md:h-8 rounded-full text-sm md:text-base
                         ${activeStep >= step.number 
                           ? 'bg-pink-500 text-white' 
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}
@@ -300,7 +301,7 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
                       </div>
                       {index < 2 && (
                         <div className={`
-                          w-12 h-0.5 mx-2
+                          w-8 md:w-12 h-0.5 mx-1 md:mx-2
                           ${activeStep > step.number 
                             ? 'bg-pink-500' 
                             : 'bg-gray-200 dark:bg-gray-700'}
@@ -312,9 +313,9 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
 
                 {/* Step 1: Upload Section */}
                 {activeStep === 1 && !showCamera && (
-                  <div className="space-y-6">
+                  <div className="space-y-4 md:space-y-6">
                     <div className="relative border-2 border-dashed border-pink-200 dark:border-pink-800 
-                                  rounded-xl p-8 text-center hover:border-pink-300 dark:hover:border-pink-700 
+                                  rounded-xl p-4 md:p-8 text-center hover:border-pink-300 dark:hover:border-pink-700 
                                   transition-colors cursor-pointer group">
                       <input
                         type="file"
@@ -329,29 +330,29 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
                           }
                         }}
                       />
-                      <RiUploadCloud2Line className="w-12 h-12 mx-auto mb-4 text-pink-400 
+                      <RiUploadCloud2Line className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 md:mb-4 text-pink-400 
                                                    group-hover:text-pink-500 transition-colors" />
-                      <h3 className="text-lg font-medium mb-2 text-gray-800 dark:text-white">
+                      <h3 className="text-base md:text-lg font-medium mb-1 md:mb-2 text-gray-800 dark:text-white">
                         Upload Your Photo
                       </h3>
-                      <p className="text-gray-500 dark:text-gray-400 text-sm">
+                      <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
                         Drop your image here or click to browse
                       </p>
                     </div>
 
                     <div className="text-center">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                      <span className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
                         or
                       </span>
                     </div>
 
                     <button
                       onClick={startCamera}
-                      className="w-full py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white 
+                      className="w-full py-3 md:py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white 
                                rounded-xl font-medium hover:shadow-lg hover:shadow-pink-500/30 
                                transition-all duration-300 flex items-center justify-center gap-2"
                     >
-                      <BsCamera className="w-5 h-5" />
+                      <BsCamera className="w-4 h-4 md:w-5 md:h-5" />
                       Take a Photo
                     </button>
                   </div>
@@ -359,19 +360,19 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
 
                 {/* Step 2 & 3: Shade Selection and Controls */}
                 {(activeStep === 2 || activeStep === 3) && (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-3 gap-4 max-h-[300px] overflow-y-auto">
+                  <div className="space-y-4 md:space-y-6">
+                    <div className="grid grid-cols-3 gap-2 md:gap-4 max-h-[200px] md:max-h-[300px] overflow-y-auto">
                       {shades.map((shade) => (
                         <div
                           key={shade.name}
                           onClick={() => handleShadeSelected(shade)}
-                          className={`cursor-pointer p-2 rounded-lg transition-all ${
+                          className={`cursor-pointer p-1 md:p-2 rounded-lg transition-all ${
                             selectedShade?.name === shade.name
                               ? 'ring-2 ring-pink-500 bg-pink-50'
                               : 'hover:bg-gray-50'
                           }`}
                         >
-                          <div className="relative aspect-square mb-2">
+                          <div className="relative aspect-square mb-1 md:mb-2">
                             <Image
                               src={shade.src}
                               alt={shade.name}
@@ -380,16 +381,16 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
                               className="rounded-lg"
                             />
                           </div>
-                          <p className="text-sm text-center">{shade.name}</p>
+                          <p className="text-xs md:text-sm text-center truncate">{shade.name}</p>
                         </div>
                       ))}
                     </div>
 
                     {/* Saturation Controls */}
-                    <div className="space-y-4">
+                    <div className="space-y-3 md:space-y-4 px-1">
                       {getRegionByCategory(category) === 'lip' && (
                         <div>
-                          <label className="text-sm text-gray-600">Lip Saturation</label>
+                          <label className="text-xs md:text-sm text-gray-600 block mb-1">Lip Saturation</label>
                           <input
                             type="range"
                             min="0"
@@ -397,13 +398,19 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
                             step="0.1"
                             value={lipSat}
                             onChange={(e) => setLipSat(parseFloat(e.target.value))}
-                            className="w-full"
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer 
+                                     dark:bg-gray-700 accent-pink-500"
                           />
+                          <div className="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>0</span>
+                            <span>1</span>
+                            <span>2</span>
+                          </div>
                         </div>
                       )}
                       {getRegionByCategory(category) === 'skin' && (
                         <div>
-                          <label className="text-sm text-gray-600">Skin Saturation</label>
+                          <label className="text-xs md:text-sm text-gray-600 block mb-1">Skin Saturation</label>
                           <input
                             type="range"
                             min="0"
@@ -411,13 +418,19 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
                             step="0.1"
                             value={skinSat}
                             onChange={(e) => setSkinSat(parseFloat(e.target.value))}
-                            className="w-full"
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer 
+                                     dark:bg-gray-700 accent-pink-500"
                           />
+                          <div className="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>0</span>
+                            <span>1</span>
+                            <span>2</span>
+                          </div>
                         </div>
                       )}
                       {getRegionByCategory(category) === 'eye' && (
                         <div>
-                          <label className="text-sm text-gray-600">Eye Saturation</label>
+                          <label className="text-xs md:text-sm text-gray-600 block mb-1">Eye Saturation</label>
                           <input
                             type="range"
                             min="0"
@@ -425,8 +438,14 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
                             step="0.1"
                             value={eyeSat}
                             onChange={(e) => setEyeSat(parseFloat(e.target.value))}
-                            className="w-full"
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer 
+                                     dark:bg-gray-700 accent-pink-500"
                           />
+                          <div className="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>0</span>
+                            <span>1</span>
+                            <span>2</span>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -434,9 +453,10 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
                     <button
                       onClick={handleTransferMakeup}
                       disabled={isTransferring || !selectedShade}
-                      className="w-full py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white 
+                      className="w-full py-3 md:py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white 
                                rounded-xl font-medium hover:shadow-lg hover:shadow-pink-500/30 
-                               transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                               transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed
+                               text-sm md:text-base"
                     >
                       {isTransferring ? 'Applying Makeup...' : activeStep === 3 ? 'Try Again' : 'Apply Makeup'}
                     </button>
@@ -445,11 +465,11 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
 
                 {/* Tips */}
                 {activeStep === 1 && (
-                  <div className="mt-8 p-4 bg-pink-50 dark:bg-pink-950/30 rounded-xl">
-                    <h4 className="font-medium mb-2 text-gray-800 dark:text-white">
+                  <div className="mt-4 md:mt-8 p-3 md:p-4 bg-pink-50 dark:bg-pink-950/30 rounded-xl">
+                    <h4 className="text-sm md:text-base font-medium mb-2 text-gray-800 dark:text-white">
                       Tips for best results:
                     </h4>
-                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                    <ul className="text-xs md:text-sm text-gray-600 dark:text-gray-400 space-y-1 md:space-y-2">
                       <li>• Ensure good lighting</li>
                       <li>• Face the camera directly</li>
                       <li>• Use a plain background</li>
