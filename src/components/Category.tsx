@@ -99,11 +99,11 @@ const Category = () => {
                     >
                       <h3 className={`${playfair.className} text-2xl font-medium text-white mb-2`}>
                         {category.type}
-                      </h3>
+        </h3>
                       <p className="text-white/90 text-sm mb-6">
                         {category.desc}
                       </p>
-                      
+
                       <div className="flex items-center text-white/90 text-sm font-medium group-hover:text-white transition-colors">
                         Explore Collection
                         <svg

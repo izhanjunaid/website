@@ -69,7 +69,7 @@ const BlogSection = () => {
         <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
           Stay updated with the latest trends, tips, and news from the beauty world.
           Our experts share their knowledge to help you look and feel your best.
-        </p>
+      </p>
       </motion.div>
 
       <motion.div

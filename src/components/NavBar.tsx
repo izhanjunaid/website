@@ -56,8 +56,8 @@ const NavBar = ({ setShowCart }: any) => {
             </motion.button>
 
             <Link href="/" className="text-3xl font-serif text-gray-800 dark:text-white">
-              GLAM AI
-            </Link>
+          GLAM AI
+        </Link>
 
             <div className="flex items-center gap-6">
               <AnimatePresence>
@@ -100,9 +100,9 @@ const NavBar = ({ setShowCart }: any) => {
                 <motion.div
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="relative cursor-pointer"
-                  onClick={() => setShowCart(true)}
-                >
+            className="relative cursor-pointer"
+            onClick={() => setShowCart(true)}
+          >
                   <AiOutlineShoppingCart className="text-gray-800 dark:text-white" />
                   {cartCount > 0 && (
                     <motion.div
@@ -111,7 +111,7 @@ const NavBar = ({ setShowCart }: any) => {
                       className="absolute -top-2 -right-2 bg-accent w-5 h-5 rounded-full text-white 
                                text-xs grid place-items-center font-medium"
                     >
-                      {cartCount}
+              {cartCount}
                     </motion.div>
                   )}
                 </motion.div>

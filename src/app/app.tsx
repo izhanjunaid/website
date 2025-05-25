@@ -7,10 +7,12 @@ import { store } from "@/redux/store";
 import React, { createContext, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { Provider } from "react-redux";
+import GlobalMakeupTransfer from "@/components/GlobalMakeupTransfer";
 
 interface AppState {
   showCart: boolean;
   showVirtualMakeup: boolean;
+  showGlobalTransfer: boolean;
 }
 
 interface AppContextType {
@@ -18,19 +20,24 @@ interface AppContextType {
   showVirtualMakeup: boolean;
   setShowCart: (show: boolean) => void;
   setShowVirtualMakeup: (show: boolean) => void;
+  showGlobalTransfer: boolean;
+  setShowGlobalTransfer: (show: boolean) => void;
 }
 
 export const AppContext = createContext<AppContextType>({
   showCart: false,
   showVirtualMakeup: false,
   setShowCart: () => {},
-  setShowVirtualMakeup: () => {}
+  setShowVirtualMakeup: () => {},
+  showGlobalTransfer: false,
+  setShowGlobalTransfer: () => {},
 });
 
 const App = ({ children }: { children: React.ReactNode }) => {
   const [state, setState] = useState<AppState>({
     showCart: false,
-    showVirtualMakeup: false
+    showVirtualMakeup: false,
+    showGlobalTransfer: false
   });
 
   const setShowCart = (show: boolean) => {
@@ -41,10 +48,15 @@ const App = ({ children }: { children: React.ReactNode }) => {
     setState(prev => ({ ...prev, showVirtualMakeup: show }));
   };
 
+  const setShowGlobalTransfer = (show: boolean) => {
+    setState(prev => ({ ...prev, showGlobalTransfer: show }));
+  };
+
   const contextValue: AppContextType = {
     ...state,
     setShowCart,
-    setShowVirtualMakeup
+    setShowVirtualMakeup,
+    setShowGlobalTransfer
   };
 
   return (
@@ -56,6 +68,10 @@ const App = ({ children }: { children: React.ReactNode }) => {
         <VirtualMakeupModal 
           isOpen={state.showVirtualMakeup} 
           onClose={() => setShowVirtualMakeup(false)} 
+        />
+        <GlobalMakeupTransfer
+          isOpen={state.showGlobalTransfer}
+          onClose={() => setShowGlobalTransfer(false)}
         />
         <Toaster position="bottom-center" />
         <Footer />

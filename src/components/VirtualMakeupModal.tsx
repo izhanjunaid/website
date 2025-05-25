@@ -195,14 +195,14 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
+    <motion.div
+      initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex items-center justify-center px-4"
         >
           {/* Backdrop */}
-          <motion.div
+      <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -250,7 +250,7 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
                     >
                       Capture Photo
                     </button>
-                  </div>
+                </div>
                 ) : resultImage ? (
                   <Image
                     src={resultImage}
@@ -260,12 +260,12 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
                   />
                 ) : sourceImage ? (
                   <Image
-                    src={sourceImage}
+                  src={sourceImage}
                     alt="Preview"
-                    layout="fill"
-                    objectFit="cover"
-                  />
-                ) : (
+                  layout="fill"
+                  objectFit="cover"
+                />
+            ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center p-8">
                       <BsCamera className="w-12 h-12 mx-auto mb-4 text-pink-300" />
@@ -364,27 +364,27 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
                     <div className="grid grid-cols-3 gap-2 md:gap-4 max-h-[200px] md:max-h-[300px] overflow-y-auto">
                       {shades.map((shade) => (
                         <div
-                          key={shade.name}
-                          onClick={() => handleShadeSelected(shade)}
+                  key={shade.name}
+                  onClick={() => handleShadeSelected(shade)}
                           className={`cursor-pointer p-1 md:p-2 rounded-lg transition-all ${
-                            selectedShade?.name === shade.name
+                    selectedShade?.name === shade.name
                               ? 'ring-2 ring-pink-500 bg-pink-50'
                               : 'hover:bg-gray-50'
-                          }`}
-                        >
+                  }`}
+                >
                           <div className="relative aspect-square mb-1 md:mb-2">
                             <Image
-                              src={shade.src}
-                              alt={shade.name}
-                              layout="fill"
-                              objectFit="cover"
+                        src={shade.src}
+                        alt={shade.name}
+                        layout="fill"
+                        objectFit="cover"
                               className="rounded-lg"
                             />
                           </div>
                           <p className="text-xs md:text-sm text-center truncate">{shade.name}</p>
-                        </div>
-                      ))}
-                    </div>
+                      </div>
+              ))}
+            </div>
 
                     {/* Saturation Controls */}
                     <div className="space-y-3 md:space-y-4 px-1">
@@ -425,17 +425,17 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
                             <span>0</span>
                             <span>1</span>
                             <span>2</span>
-                          </div>
-                        </div>
+        </div>
+              </div>
                       )}
                       {getRegionByCategory(category) === 'eye' && (
                         <div>
                           <label className="text-xs md:text-sm text-gray-600 block mb-1">Eye Saturation</label>
-                          <input
-                            type="range"
-                            min="0"
-                            max="2"
-                            step="0.1"
+              <input
+                type="range"
+                min="0"
+                max="2"
+                step="0.1"
                             value={eyeSat}
                             onChange={(e) => setEyeSat(parseFloat(e.target.value))}
                             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer 
@@ -448,10 +448,10 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
                           </div>
                         </div>
                       )}
-                    </div>
+            </div>
 
                     <button
-                      onClick={handleTransferMakeup}
+          onClick={handleTransferMakeup}
                       disabled={isTransferring || !selectedShade}
                       className="w-full py-3 md:py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white 
                                rounded-xl font-medium hover:shadow-lg hover:shadow-pink-500/30 
@@ -479,10 +479,10 @@ const VirtualMakeupModal = ({ isOpen, onClose, shades = [], category }: VirtualM
                 )}
               </div>
             </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
   );
 };
 

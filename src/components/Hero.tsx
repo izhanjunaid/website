@@ -4,24 +4,18 @@ import Image from "next/image";
 import React from "react";
 import { motion } from "framer-motion";
 import { Playfair_Display } from "next/font/google";
+import { useContext } from "react";
+import { AppContext } from "@/app/app";
 
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
-interface HeroProps {
-  setShowVirtualMakeup?: (show: boolean) => void;
-}
+const Hero = () => {
+  const { setShowVirtualMakeup, setShowGlobalTransfer } = useContext(AppContext);
 
-const Hero = ({ setShowVirtualMakeup }: HeroProps = {}) => {
   const fadeIn = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.8 }
-  };
-
-  const handleTryVirtualMakeup = () => {
-    if (setShowVirtualMakeup) {
-      setShowVirtualMakeup(true);
-    }
   };
 
   return (
@@ -68,41 +62,33 @@ const Hero = ({ setShowVirtualMakeup }: HeroProps = {}) => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={handleTryVirtualMakeup}
+                onClick={() => setShowGlobalTransfer(true)}
                 className="px-8 py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-full 
                          font-medium hover:shadow-lg hover:shadow-pink-500/30 transition-all duration-300"
               >
                 Try Virtual Makeup
               </motion.button>
               
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-full 
-                         font-medium border border-gray-200 dark:border-gray-700 hover:shadow-lg 
-                         transition-all duration-300"
-              >
-                Explore Collection
-              </motion.button>
+              
             </motion.div>
 
             {/* Stats */}
-            <motion.div 
+            <motion.div
               {...fadeIn}
               transition={{ delay: 0.8 }}
-              className="grid grid-cols-3 gap-8 mt-12 pt-12 border-t border-gray-100 dark:border-gray-800"
+              className="grid grid-cols-3 gap-8 mt-12 pt-12 border-t border-gray-200 dark:border-gray-800"
             >
               <div>
-                <h4 className="text-3xl font-semibold text-pink-500 mb-2">98%</h4>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">Customer Satisfaction</p>
+                <div className="text-3xl font-bold text-pink-500 mb-2">98%</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Customer Satisfaction</div>
               </div>
               <div>
-                <h4 className="text-3xl font-semibold text-pink-500 mb-2">50k+</h4>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">Active Users</p>
+                <div className="text-3xl font-bold text-pink-500 mb-2">50k+</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Active Users</div>
               </div>
               <div>
-                <h4 className="text-3xl font-semibold text-pink-500 mb-2">500+</h4>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">Products</p>
+                <div className="text-3xl font-bold text-pink-500 mb-2">500+</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Products</div>
               </div>
             </motion.div>
           </motion.div>
