@@ -7,7 +7,12 @@ import { Playfair_Display } from "next/font/google";
 import { useContext } from "react";
 import { AppContext } from "@/app/app";
 
-const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: 'swap',
+  fallback: ['Georgia', 'Times New Roman', 'serif']
+});
 
 const Hero = () => {
   const { setShowVirtualMakeup, setShowGlobalTransfer } = useContext(AppContext);
@@ -68,8 +73,6 @@ const Hero = () => {
               >
                 Try Virtual Makeup
               </motion.button>
-              
-              
             </motion.div>
 
             {/* Stats */}
